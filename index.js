@@ -15,20 +15,23 @@ const client = new Client({
 });
 const chatClient = new ChatClient(process.env.DIFY_API_KEY);
 
-const sequelize = new Sequelize(process.env.DB_NAME, process.env.DB_USER, process.env.DB_PASSWORD, {
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
+const sequelize = new Sequelize(
+  process.env.POSTGRES_DB,
+  process.env.POSTGRES_USER,
+  process.env.POSTGRES_PASSWORD, {
+  host: process.env.POSTGRES_HOST,
+  port: process.env.POSTGRES_PORT,
   dialect: 'postgres'
 });
 
 sequelize.authenticate()
-    .then(() => {
-        console.info("INFO - Database connected.")
-    })
-    .catch((err) => {
-        console.error("ERROR - Unable to connect to the database:", err)
-    })
-    
+  .then(() => {
+    console.info("INFO - Database connected.")
+  })
+  .catch((err) => {
+    console.error("ERROR - Unable to connect to the database:", err)
+  })
+
 const messageDispatcher = (message) => {
   if (message.author.bot) return;
   if (message.mentions.has(client.user)) {
@@ -75,18 +78,18 @@ const handleMessageCreate = async (message) => {
       try {
         await messageRef.edit(msg);
       } catch (error) {
-        console.error('Error editing message:', error);
+        
       }
     }
   });
 
   stream.on('end', () => {
-    console.log(`stream ended with msg: ${msg}`);
+    console.log('INFO - Stream ended.', msg);
     if (messageRef !== null) {
       try {
         messageRef.edit(msg);
       } catch (error) {
-        console.error('Error editing message:', error);
+        console.error("ERROR - Unable to edit message:", error)
       }
     }
   });
