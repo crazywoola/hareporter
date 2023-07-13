@@ -22,6 +22,7 @@ client.once(Events.ClientReady, (c) => {
 
 client.on(Events.MessageCreate, async (message) => {
   // console.log(message.channel)
+  if (message.author.bot) return;
   const inputs = {};
   const user = `${message.author.username}-${message.author.id}`;
   const query = message.content;
@@ -38,13 +39,14 @@ client.on(Events.MessageCreate, async (message) => {
     null
   );
   const stream = response.data;
-
+  const msgRef = await message.channel.send("Hello");
   stream.on("data", (data) => {
     console.log(data);
   });
 
   stream.on("end", () => {
     console.log("stream done");
+    msgRef.edit("Bye");
   });
   
   return;
