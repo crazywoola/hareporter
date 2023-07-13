@@ -13,7 +13,9 @@
   "dependencies": {
     "dify-client": "^2.0.0",
     "discord.js": "^14.11.0",
-    "dotenv": "^16.0.3"
+    "dotenv": "^16.0.3",
+    "pg": "^8.11.1",
+    "sequelize": "^6.32.1"
   },
   "devDependencies": {
     "nodemon": "^3.0.1",
