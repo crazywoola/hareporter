@@ -1,11 +1,12 @@
 import dotenv from 'dotenv';
 import { Client, Events, GatewayIntentBits } from 'discord.js';
-
-dotenv.config();
 import { ChatClient } from 'dify-client';
-import { Sequelize } from "sequelize"
+import { conn, User, Conversation, ChatMessage } from './db.js';
+// Load environment variables from .env file
+dotenv.config();
+
 // Create a new client instance
-const client = new Client({
+const discord = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
@@ -15,28 +16,15 @@ const client = new Client({
 });
 const chatClient = new ChatClient(process.env.DIFY_API_KEY);
 
-const sequelize = new Sequelize(
-  process.env.POSTGRES_DB,
-  process.env.POSTGRES_USER,
-  process.env.POSTGRES_PASSWORD, {
-  host: process.env.POSTGRES_HOST,
-  port: process.env.POSTGRES_PORT,
-  dialect: 'postgres'
-});
-
-sequelize.authenticate()
-  .then(() => {
-    console.info("INFO - Database connected.")
-  })
-  .catch((err) => {
-    console.error("ERROR - Unable to connect to the database:", err)
-  })
+(async () => {
+  await conn.sync({ force: true });
+  // Code here
+})();
 
 const messageDispatcher = (message) => {
   if (message.author.bot) return;
-  if (message.mentions.has(client.user)) {
-    message.reply('Hello!');
-    // handleMessageCreate(message);
+  if (message.mentions.has(discord.user)) {
+    handleMessageCreate(message);
   } else {
     return;
   }
@@ -45,16 +33,24 @@ const messageDispatcher = (message) => {
 const handleMessageCreate = async (message) => {
   // Basic query to send to Dify
   const inputs = {};
-  const user = `${message.author.username}-${message.author.id}`;
   const query = message.content;
-  console.log(`user: ${user} content: ${query}`);
-
+  const [user,] = await User.findOrCreate({
+    where: {
+      id: message.author.id,
+      username: message.author.username
+    }
+  })
+  const [conversation,] = await Conversation.findOrCreate({
+    where: {
+      userId: user.id
+    }
+  })
   const response = await chatClient.createChatMessage(
     inputs,
     query,
-    user,
+    user.external_id,
     true,
-    null
+    conversation.conversation_id,
   );
   const stream = response.data;
 
@@ -66,11 +62,12 @@ const handleMessageCreate = async (message) => {
     const parsed = JSON.parse(
       completeString.slice(completeString.indexOf('{'))
     );
-    const result = parsed;
 
-    msg += result.answer;
+    msg += parsed.answer;
 
     if (msg.length === 0) {
+      conversation.conversation_id = parsed.conversation_id;
+      await conversation.save();
       messageRef = messageRef || (await message.reply('...'));
     }
 
@@ -78,7 +75,8 @@ const handleMessageCreate = async (message) => {
       try {
         await messageRef.edit(msg);
       } catch (error) {
-        
+        console.error("ERROR - Unable to edit message:", error)
+        conn.close()
       }
     }
   });
@@ -87,19 +85,27 @@ const handleMessageCreate = async (message) => {
     console.log('INFO - Stream ended.', msg);
     if (messageRef !== null) {
       try {
+        ChatMessage.create({
+          message: message.content,
+          answer: msg,
+          conversation_id: conversation.conversation_id,
+          userId: user.id,
+        });
         messageRef.edit(msg);
       } catch (error) {
         console.error("ERROR - Unable to edit message:", error)
+        conn.close()
       }
     }
   });
 };
 
 // When the client is ready, run this code (only once)
-client.once(Events.ClientReady, (c) => {
+discord.once(Events.ClientReady, (c) => {
   console.log(`Ready! Logged in as ${c.user.tag}`);
 });
 
-client.on(Events.MessageCreate, messageDispatcher);
+discord.on(Events.MessageCreate, messageDispatcher);
+
 // Log in to Discord with your client's token
-client.login(process.env.DISCORD_TOKEN);
+discord.login(process.env.DISCORD_TOKEN);

@@ -1,5 +1,5 @@
 {
-  "name": "HarryPotter",
+  "name": "harry-potter-bot",
   "version": "1.0.0",
   "main": "index.js",
   "author": "crazywoola",
@@ -7,8 +7,8 @@
   "private": false,
   "type": "module",
   "scripts": {
-    "dev": "nodemon index.js",
-    "start": "node index.js"
+    "dev": "nodemon src/index.js",
+    "start": "node src/index.js"
   },
   "dependencies": {
     "dify-client": "^2.0.0",
