@@ -15,6 +15,13 @@ npm start
 docker run -d IMAGE_ID
 ```
 
+## Docker Compose
+
+```
+docker volume create db-data
+docker compose up
+```
+
 ## Links
 [discord.js doc](https://old.discordjs.dev/#/docs/discord.js/main/general/welcome)  
 [discord dev portal](https://discord.com/developers/)  
