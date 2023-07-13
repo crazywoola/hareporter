@@ -1,0 +1,17 @@
+{
+  "name": "HarryPotter",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "crazywoola",
+  "license": "MIT",
+  "private": false,
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "dify-client": "^2.0.0",
+    "discord.js": "^14.11.0",
+    "dotenv": "^16.0.3"
+  }
+}
