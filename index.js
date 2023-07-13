@@ -18,8 +18,10 @@ const chatClient = new ChatClient(process.env.DIFY_API_KEY);
 const messageDispatcher = (message) => {
   if (message.author.bot) return;
   if (message.mentions.has(client.user)) {
-    handleMessageCreate(message);
+    message.reply('Hello!');
+    // handleMessageCreate(message);
   } else {
+    return;
   }
 };
 
