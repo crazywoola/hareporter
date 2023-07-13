@@ -13,18 +13,23 @@ const client = new Client({
     GatewayIntentBits.GuildMembers,
   ],
 });
+const chatClient = new ChatClient(process.env.DIFY_API_KEY);
+
+const messageDispatcher = (message) => {
+  if (message.author.bot) return;
+  if (message.mentions.has(client.user)) {
+    handleMessageCreate(message);
+  } else {
+  }
+};
 
 const handleMessageCreate = async (message) => {
-  // Ignore messages from bots
-  if (message.author.bot) return;
-
   // Basic query to send to Dify
   const inputs = {};
   const user = `${message.author.username}-${message.author.id}`;
   const query = message.content;
   console.log(`user: ${user} content: ${query}`);
 
-  const chatClient = new ChatClient(process.env.DIFY_API_KEY);
   const response = await chatClient.createChatMessage(
     inputs,
     query,
@@ -51,7 +56,6 @@ const handleMessageCreate = async (message) => {
     }
 
     if (messageRef !== null && msg.length % 4 === 0) {
-      console.log(`msg: ${msg}`);
       try {
         await messageRef.edit(msg);
       } catch (error) {
@@ -77,6 +81,6 @@ client.once(Events.ClientReady, (c) => {
   console.log(`Ready! Logged in as ${c.user.tag}`);
 });
 
-client.on(Events.MessageCreate, handleMessageCreate);
+client.on(Events.MessageCreate, messageDispatcher);
 // Log in to Discord with your client's token
 client.login(process.env.DISCORD_TOKEN);

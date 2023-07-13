@@ -7,6 +7,7 @@
   "private": false,
   "type": "module",
   "scripts": {
+    "dev": "nodemon index.js",
     "start": "node index.js"
   },
   "dependencies": {
@@ -15,6 +16,7 @@
     "dotenv": "^16.0.3"
   },
   "devDependencies": {
+    "nodemon": "^3.0.1",
     "prettier": "^3.0.0"
   }
 }
