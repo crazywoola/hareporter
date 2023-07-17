@@ -17,6 +17,8 @@ const discord = new Client({
 const chatClient = new ChatClient(process.env.DIFY_API_KEY);
 
 (async () => {
+  const app = await chatClient.getApplicationParameters();
+  console.log('INFO - Application parameters:', app.data);
   await conn.sync({ force: true });
   // Code here
 })();
@@ -32,7 +34,10 @@ const messageDispatcher = (message) => {
 
 const handleMessageCreate = async (message) => {
   // Basic query to send to Dify
-  const inputs = {};
+  const inputs = {
+    name: 'discord bot',
+    Edition: "Cloud version"
+  };
   const query = message.content;
   const [user,] = await User.findOrCreate({
     where: {
