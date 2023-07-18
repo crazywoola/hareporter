@@ -20,36 +20,39 @@ const discord = new Client({
 const chatClient = new ChatClient(process.env.DIFY_API_KEY);
 
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
-
 // Log in to Discord with your client's token
 
-const devMessageDispatcher = (message) => {
-  console.log(message);
-  message.reply({
-    content: 'Pong!',
-  });
+const interactionMessageDispatcher = (message) => {
+  if (!message.isCommand()) return;
+
+  if (message.commandName === 'ping') {
+    interamessagection.reply({
+      content: 'Pong!',
+    });
+  } else if (message.commandName === 'ask') {
+    handleMessageCreate(message);
+  }
 };
 
-const messageDispatcher = (message) => {
-  if (message.author.bot) return;
-  if (message.mentions.has(discord.user)) {
-    handleMessageCreate(message);
-  } else {
-    return;
-  }
+const devInteractionMessageDispatcher = (message) => {
+  if (!message.isCommand()) return;
+
+  interamessagection.reply({
+    content: 'Pong!',
+  });
 };
 
 const handleMessageCreate = async (message) => {
   // Basic query to send to Dify
   const inputs = {
-    name: 'discord bot',
+    name: message.options.getString('edition'),
     Edition: 'Cloud version',
   };
-  const query = message.content;
+  const query = message.options.getString('query');
   const [user] = await User.findOrCreate({
     where: {
-      id: message.author.id,
-      username: message.author.username,
+      id: message.user.id,
+      username: message.user.username,
     },
   });
   const [conversation] = await Conversation.findOrCreate({
@@ -114,35 +117,33 @@ const handleMessageCreate = async (message) => {
 
 // main function
 (async () => {
-  const app = await chatClient.getApplicationParameters();
-  console.log(app.data.user_input_form);
-  // await conn.sync({ force: true });
-  // Code here
-  const commands = [PingCmd.data.toJSON(), AskCmd.data.toJSON()];
-
   try {
+    console.log('Started get application parameters.');
+    const app = await chatClient.getApplicationParameters();
+    console.log(app.data.user_input_form);
+    console.log('Started refreshing database.');
+    // await conn.sync({ force: true });
     console.log('Started refreshing application (/) commands.');
+    const commands = [PingCmd.data.toJSON(), AskCmd.data.toJSON()];
     await rest.put(
-      Routes.applicationGuildCommands(
+      Routes.applicationCommands(
         process.env.DISCORD_ID,
-        '1112206992900096022'
+        null, // guild id (null for global commands)
       ),
       {
         body: commands,
       }
     );
-    discord.login(process.env.DISCORD_TOKEN);
-
-    // When the client is ready, run this code (only once)
-    discord.once(Events.ClientReady, (c) => {
-      console.log(`Ready! Logged in as ${c.user.tag}`);
-    });
-
-    // discord.on(Events.MessageCreate, messageDispatcher);
-    // discord.on(Events.MessageCreate, devMessageDispatcher);
-
-    discord.on(Events.InteractionCreate, devMessageDispatcher);
   } catch (err) {
     console.log(err);
   }
 })();
+
+discord.login(process.env.DISCORD_TOKEN);
+
+// When the client is ready, run this code (only once)
+discord.once(Events.ClientReady, (c) => {
+  console.log(`Ready! Logged in as ${c.user.tag}`);
+});
+
+discord.on(Events.InteractionCreate, devInteractionMessageDispatcher);
