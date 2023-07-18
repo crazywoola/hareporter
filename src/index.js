@@ -4,7 +4,7 @@ import { REST } from '@discordjs/rest';
 import PingCmd from './commands/ping.js';
 import AskCmd from './commands/ask.js';
 import { ChatClient } from 'dify-client';
-// import { conn, User, Conversation, ChatMessage } from './db.js';
+import { conn, User, Conversation, ChatMessage } from './db.js';
 // Load environment variables from .env file
 dotenv.config();
 
@@ -122,7 +122,7 @@ const handleMessageCreate = async (message) => {
     const app = await chatClient.getApplicationParameters();
     console.log(app.data.user_input_form);
     console.log('Started refreshing database.');
-    // await conn.sync({ force: true });
+    await conn.sync({ force: true });
     console.log('Started refreshing application (/) commands.');
     const commands = [PingCmd.data.toJSON(), AskCmd.data.toJSON()];
     await rest.put(
@@ -146,4 +146,4 @@ discord.once(Events.ClientReady, (c) => {
   console.log(`Ready! Logged in as ${c.user.tag}`);
 });
 
-discord.on(Events.InteractionCreate, devInteractionMessageDispatcher);
+discord.on(Events.InteractionCreate, interactionMessageDispatcher);
