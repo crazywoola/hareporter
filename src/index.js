@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import { Client, Events, GatewayIntentBits, Routes } from 'discord.js';
 import { REST } from '@discordjs/rest';
 import PingCmd from './commands/ping.js';
+import AskCmd from './commands/ask.js';
 import { ChatClient } from 'dify-client';
 // import { conn, User, Conversation, ChatMessage } from './db.js';
 // Load environment variables from .env file
@@ -119,7 +120,7 @@ const handleMessageCreate = async (message) => {
   console.log(app.data.user_input_form);
   // await conn.sync({ force: true });
   // Code here
-  const commands = [PingCmd.data.toJSON()];
+  const commands = [PingCmd.data.toJSON(), AskCmd.data.toJSON()];
 
   try {
     console.log('Started refreshing application (/) commands.');

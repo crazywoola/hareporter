@@ -21,10 +21,4 @@ export default {
   data: new SlashCommandBuilder()
     .setName('ping')
     .setDescription('Replies with Pong!')
-    .addStringOption(option =>
-      option.setName('edition')
-        .setDescription('What edition of Dify are you using?')
-        .setRequired(true)
-        .addChoice('Cloud version', 'Cloud version')
-        .addChoice('Self-hosted', 'Self-hosted')),
 }
