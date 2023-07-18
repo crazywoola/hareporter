@@ -5,7 +5,7 @@ import PingCmd from './commands/ping.js';
 import AskCmd from './commands/ask.js';
 import { ChatClient } from 'dify-client';
 import { conn, User, Conversation, ChatMessage } from './db.js';
-// Load environment variables from .env file
+
 dotenv.config();
 
 // Create a new client instance
@@ -17,34 +17,61 @@ const discord = new Client({
     GatewayIntentBits.GuildMembers,
   ],
 });
+
 const chatClient = new ChatClient(process.env.DIFY_API_KEY);
-
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
-// Log in to Discord with your client's token
 
+// Log in to Discord with your client's token
+discord.login(process.env.DISCORD_TOKEN);
+
+// When the client is ready, run this code (only once)
+discord.once(Events.ClientReady, async (c) => {
+  console.log(`Ready! Logged in as ${c.user.tag}`);
+
+  try {
+    console.log('Started getting application parameters.');
+    const app = await chatClient.getApplicationParameters();
+    console.log(app.data.user_input_form);
+
+    console.log('Started refreshing database.');
+    await conn.sync({ force: true });
+
+    console.log('Started refreshing application (/) commands.');
+    const commands = [PingCmd.data.toJSON(), AskCmd.data.toJSON()];
+    await rest.put(
+      Routes.applicationCommands(process.env.DISCORD_ID, null),
+      {
+        body: commands,
+      }
+    );
+  } catch (err) {
+    console.error(err);
+  }
+});
+
+// Interaction message dispatcher
 const interactionMessageDispatcher = (message) => {
   if (!message.isCommand()) return;
 
   if (message.commandName === 'ping') {
-    message.reply({
-      content: 'Pong!',
-    });
+    message.reply('Pong!');
   } else if (message.commandName === 'ask') {
     handleMessageCreate(message);
   } else {
-    message.reply({
-      content: 'Unknown command!',
-    });
+    message.reply('Unknown command!');
   }
 };
 
 const handleMessageCreate = async (message) => {
-  // Basic query to send to Dify
+  await message.deferReply({ ephemeral: true });
+  await message.followUp({ content: '...' });
   const inputs = {
     name: 'discord bot',
     Edition: message.options.getString('edition'),
   };
   const query = message.options.getString('query');
+  console.log('INFO - Query:', query, 'Inputs:', inputs);
+
   const [user] = await User.findOrCreate({
     where: {
       id: message.user.id,
@@ -67,35 +94,29 @@ const handleMessageCreate = async (message) => {
   );
 
   const stream = response.data;
-
   let msg = '';
   let messageRef = null;
+  let parsed; // Declare the parsed variable here
 
-  stream.on('data', async (chunk) => {
-    const completeString = chunk.toString();
-    const parsed = JSON.parse(
-      completeString.slice(completeString.indexOf('{'))
-    );
-
-    msg += parsed.answer;
+  stream.on('data', (chunk) => {
+    try {
+      const completeString = chunk.toString();
+      parsed = JSON.parse(completeString.slice(completeString.indexOf('{')));
+      msg += parsed.answer;
+    } catch (error) {
+      msg += ' ';
+    }
 
     if (msg.length === 0) {
       conversation.conversation_id = parsed.conversation_id;
-      await conversation.save();
-      messageRef = await message.reply({
-        content: '...',
-      });
+      conversation.save();
+      messageRef = message.editReply({ content: msg || '😄' });
     }
 
     if (messageRef !== null && msg.length % 4 === 0) {
-      try {
-        await messageRef.edit({
-          content: msg,
-        });
-      } catch (error) {
+      message.editReply({ content: msg || '😄' }).catch((error) => {
         console.error('ERROR - Unable to edit message:', error);
-        conn.close();
-      }
+      });
     }
   });
 
@@ -103,15 +124,15 @@ const handleMessageCreate = async (message) => {
     console.log('INFO - Stream ended.', msg);
     if (messageRef !== null) {
       try {
-        ChatMessage.create({
+        await ChatMessage.create({
           message: message.content,
           answer: msg,
           conversation_id: conversation.conversation_id,
           userId: user.id,
         });
-        await messageRef.edit({
-          content: msg,
-        });
+        if (msg.trim().length > 0) {
+          await message.editReply({ content: msg || '😄' });
+        }
       } catch (error) {
         console.error('ERROR - Unable to edit message:', error);
         conn.close();
@@ -120,37 +141,6 @@ const handleMessageCreate = async (message) => {
   });
 };
 
-// main function
-(async () => {
-  try {
-    console.log('Started get application parameters.');
-    const app = await chatClient.getApplicationParameters();
-    console.log(app.data.user_input_form);
-    console.log('Started refreshing database.');
-    await conn.sync({ force: true });
-    console.log('Started refreshing application (/) commands.');
-    const commands = [PingCmd.data.toJSON(), AskCmd.data.toJSON()];
-    await rest.put(
-      Routes.applicationCommands(
-        process.env.DISCORD_ID,
-        null, // guild id (null for global commands)
-      ),
-      {
-        body: commands,
-      }
-    );
-  } catch (err) {
-    console.log(err);
-  }
-})();
 
-// When the client is ready, run this code (only once)
-discord.once(Events.ClientReady, (c) => {
-  console.log(`Ready! Logged in as ${c.user.tag}`);
-});
-
+// Handle interaction creation
 discord.on(Events.InteractionCreate, interactionMessageDispatcher);
-
-discord.login(process.env.DISCORD_TOKEN);
-
-
