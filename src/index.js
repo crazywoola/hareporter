@@ -26,27 +26,23 @@ const interactionMessageDispatcher = (message) => {
   if (!message.isCommand()) return;
 
   if (message.commandName === 'ping') {
-    interamessagection.reply({
+    message.reply({
       content: 'Pong!',
     });
   } else if (message.commandName === 'ask') {
     handleMessageCreate(message);
+  } else {
+    message.reply({
+      content: 'Unknown command!',
+    });
   }
-};
-
-const devInteractionMessageDispatcher = (message) => {
-  if (!message.isCommand()) return;
-
-  interamessagection.reply({
-    content: 'Pong!',
-  });
 };
 
 const handleMessageCreate = async (message) => {
   // Basic query to send to Dify
   const inputs = {
-    name: message.options.getString('edition'),
-    Edition: 'Cloud version',
+    name: 'discord bot',
+    Edition: message.options.getString('edition'),
   };
   const query = message.options.getString('query');
   const [user] = await User.findOrCreate({
@@ -55,11 +51,13 @@ const handleMessageCreate = async (message) => {
       username: message.user.username,
     },
   });
+
   const [conversation] = await Conversation.findOrCreate({
     where: {
       userId: user.id,
     },
   });
+
   const response = await chatClient.createChatMessage(
     inputs,
     query,
@@ -67,6 +65,7 @@ const handleMessageCreate = async (message) => {
     true,
     conversation.conversation_id
   );
+
   const stream = response.data;
 
   let msg = '';
@@ -83,12 +82,16 @@ const handleMessageCreate = async (message) => {
     if (msg.length === 0) {
       conversation.conversation_id = parsed.conversation_id;
       await conversation.save();
-      messageRef = messageRef || (await message.reply('...'));
+      messageRef = await message.reply({
+        content: '...',
+      });
     }
 
     if (messageRef !== null && msg.length % 4 === 0) {
       try {
-        await messageRef.edit(msg);
+        await messageRef.edit({
+          content: msg,
+        });
       } catch (error) {
         console.error('ERROR - Unable to edit message:', error);
         conn.close();
@@ -96,7 +99,7 @@ const handleMessageCreate = async (message) => {
     }
   });
 
-  stream.on('end', () => {
+  stream.on('end', async () => {
     console.log('INFO - Stream ended.', msg);
     if (messageRef !== null) {
       try {
@@ -106,7 +109,9 @@ const handleMessageCreate = async (message) => {
           conversation_id: conversation.conversation_id,
           userId: user.id,
         });
-        messageRef.edit(msg);
+        await messageRef.edit({
+          content: msg,
+        });
       } catch (error) {
         console.error('ERROR - Unable to edit message:', error);
         conn.close();
@@ -139,11 +144,13 @@ const handleMessageCreate = async (message) => {
   }
 })();
 
-discord.login(process.env.DISCORD_TOKEN);
-
 // When the client is ready, run this code (only once)
 discord.once(Events.ClientReady, (c) => {
   console.log(`Ready! Logged in as ${c.user.tag}`);
 });
 
 discord.on(Events.InteractionCreate, interactionMessageDispatcher);
+
+discord.login(process.env.DISCORD_TOKEN);
+
+

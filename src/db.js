@@ -9,7 +9,8 @@ export const conn = new Sequelize(
   process.env.POSTGRES_PASSWORD, {
   host: process.env.POSTGRES_HOST,
   port: process.env.POSTGRES_PORT,
-  dialect: 'postgres'
+  dialect: 'postgres',
+  logging: false
 });
 
 conn.authenticate()
