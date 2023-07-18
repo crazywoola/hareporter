@@ -25,11 +25,9 @@ const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 
 const devMessageDispatcher = (message) => {
   console.log(message);
-  if (message.author.bot) return;
-  if (message.mentions.has(discord.user)) {
-  } else {
-    return;
-  }
+  message.reply({
+    content: 'Pong!',
+  });
 };
 
 const messageDispatcher = (message) => {
@@ -141,7 +139,9 @@ const handleMessageCreate = async (message) => {
     });
 
     // discord.on(Events.MessageCreate, messageDispatcher);
-    discord.on(Events.MessageCreate, devMessageDispatcher);
+    // discord.on(Events.MessageCreate, devMessageDispatcher);
+
+    discord.on(Events.InteractionCreate, devMessageDispatcher);
   } catch (err) {
     console.log(err);
   }
