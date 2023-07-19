@@ -63,7 +63,7 @@ const interactionMessageDispatcher = (message) => {
 };
 
 const handleMessageCreate = async (message) => {
-  await message.deferReply({ ephemeral: true });
+  await message.deferReply({ ephemeral: false });
   await message.followUp({ content: '...' });
   const inputs = {
     name: 'discord bot',
