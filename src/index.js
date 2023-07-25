@@ -71,7 +71,7 @@ const handleMessageCreate = async (message) => {
   };
   const query = message.options.getString('query');
   console.log('INFO - Query:', query, 'Inputs:', inputs);
-
+  const external_id = `${message.user.username}-${message.user.id}`;
   const [user] = await User.findOrCreate({
     where: {
       id: message.user.id,
@@ -88,7 +88,7 @@ const handleMessageCreate = async (message) => {
   const response = await chatClient.createChatMessage(
     inputs,
     query,
-    user.external_id,
+    external_id,
     true,
     conversation.conversation_id
   );
